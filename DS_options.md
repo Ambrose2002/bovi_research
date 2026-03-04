@@ -138,18 +138,66 @@ Stores outputs of local processing with traceability back to raw.
 
 - Can we settle on some modalities?
 - What does data for each modality look like?
-- How long do we keep files?
+- How long do we keep files (video, images, etc)?
 - What does sensor data look like for different modalities (consider different entities also)
 - For videos, what features do we care about?
 - For activities, what features do we care about?
-- Realistically, what are our options for getting these features?
+- Realistically, what are our options for getting these features (CV for video?)?
+- Will embeddings upload to cloud be scheduled or on-demand?
 
 ## Pipeline
 
-1. Raw arrives -> store in observations / assets
-2. Worker builds features tensor for a window. X (C, T, F)
-3. Pass X into an encoder. encoder(X) -> z
-4. Store z in derived
+1. Raw arrives -> Edge API stores raw batches in `observations` (and media pointers in `assets`).
+2. Processing worker selects a window (per cow, per time range) and queries raw docs that overlap the window.
+3. Worker builds an in-memory tensor of numeric features:
+   - Per cow
+   - Many cows
+4. Worker computes derived artifacts:
+   - features (interpretable summaries)
+   - embeddings
+5. Worker stores outputs in `derived` with `t_start/t_end` and `input_refs`.
+6. Uploader worker batches new `derived` records and POSTs them to the cloud uplink endpoint.
+
+## End-to-end flow (ASCII)
+
+Sensors / Farm Systems
+  |  (batched data; variable arrival)
+  v
++---------------------+        +------------------+
+| Edge Ingest API     |        | Local Storage    |
+|  /api/ingest/*      |------->| MongoDB          |
++---------------------+        |  - observations  |
+                               |  - assets        |
+                               |  - streams       |
+                               +------------------+
+                                        |
+                                        | query (cow_id, t_start..t_end)
+                                        v
+                              +------------------+
+                              | Processing Worker|
+                              |  build tensor X  |
+                              |  encode -> z     |
+                              +------------------+
+                                        |
+                                        | write
+                                        v
+                              +------------------+
+                              | MongoDB          |
+                              |  - derived       |
+                              +------------------+
+                                        |
+                                        | batch + POST
+                                        v
+                              +--------------------------+
+                              | Uploader Worker           |
+                              |  /cloud/v1/uplink/...     |
+                              +--------------------------+
+                                        |
+                                        v
+                              +--------------------------+
+                              | Cloud                    |
+                              | training / aggregation  |
+                              +--------------------------+
 
 ---
 
@@ -456,7 +504,7 @@ The cloud interface is separate from the local GET endpoints; the default policy
       "t_start": 1718001000,
       "t_end": 1718001100,
       "derived_type": "features",
-      "value": { "fat_content": 3.8, "protein": 3.2 },
+      "value": { "fat_content": 3.8, "protein": 3.2 }
     }
   ]
 }
