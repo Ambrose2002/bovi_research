@@ -160,7 +160,7 @@ Stores outputs of local processing with traceability back to raw.
    - Per cow
    - Many cows
 4. Worker computes derived artifacts:
-   - features (interpretable summaries)
+   - features
    - embeddings
 5. Worker stores outputs in `derived` with `t_start/t_end` and `input_refs`.
 6. Uploader worker batches new `derived` records and POSTs them to the cloud uplink endpoint.
