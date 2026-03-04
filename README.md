@@ -1,5 +1,12 @@
 Proposed DB: **MongoDB (local / edge-first)**
 
+## Why MongoDB (vs Cosmos DB)
+
+- MongoDB runs as the real database engine locally, providing full parity with production environments, whereas Cosmos DB is cloud-native and relies on an emulator for local development.
+- Cosmos emulator has platform and development constraints, with limitations on Linux and macOS; MongoDB runs natively on macOS, Linux, and Windows.
+- MongoDB’s local behavior closely matches production environments, offering better feature parity; Cosmos emulator has limitations and does not fully reflect all cloud modes.
+- MongoDB offers better offline-first sync options that can be optionally used.
+
 ## Purpose
 
 We need a **local edge database** that can:
@@ -159,7 +166,7 @@ Stores outputs of local processing with traceability back to raw.
 6. Uploader worker batches new `derived` records and POSTs them to the cloud uplink endpoint.
 
 ## End-to-end flow (ASCII)
-
+```text
 Sensors / Farm Systems
   |  (batched data; variable arrival)
   v
@@ -189,16 +196,16 @@ Sensors / Farm Systems
                                         | batch + POST
                                         v
                               +--------------------------+
-                              | Uploader Worker           |
-                              |  /cloud/v1/uplink/...     |
+                              | Uploader Worker          |
+                              |  /cloud/v1/uplink/...    |
                               +--------------------------+
                                         |
                                         v
                               +--------------------------+
                               | Cloud                    |
-                              | training / aggregation  |
+                              | training / aggregation   |
                               +--------------------------+
-
+```
 ---
 
 ## Minimal Edge API (proof-of-concept)
